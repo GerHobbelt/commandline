@@ -70,7 +70,7 @@ namespace CommandLine.Core
                 var valueSpecPropsResult =
                     ValueMapper.MapValues(
                         (from pt in specProps where pt.Specification.IsValue() orderby ((ValueSpecification)pt.Specification).Index select pt),
-                        valuesPartition,    
+                        valuesPartition,
                         (vals, type, isScalar) => TypeConverter.ChangeType(vals, type, isScalar, parsingCulture, ignoreValueCase));
 
                 var missingValueErrors = from token in errorsPartition
@@ -86,7 +86,7 @@ namespace CommandLine.Core
 
                 //build the instance, determining if the type is mutable or not.
                 T instance;
-                if(typeInfo.IsMutable() == true)
+                if (typeInfo.IsMutable() == true)
                 {
                     instance = BuildMutable(factory, specPropsWithValue, setPropertyErrors);
                 }
