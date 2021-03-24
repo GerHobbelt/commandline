@@ -114,7 +114,7 @@ namespace CommandLine.Tests.Unit.Core
         {
             //Arrange
             //Act
-            var result = Tokenizer.Tokenize(args, name => NameLookupResult.OtherOptionFound, token => token);
+            var result = Tokenizer.Tokenize(args, name => NameLookupResult.OtherOptionFound);
             var tokens = result.SucceededWith().ToList();
             //Assert
             tokens.Should().NotBeNull();
