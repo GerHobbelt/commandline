@@ -8,11 +8,10 @@ using FluentAssertions;
 using CSharpx;
 using RailwaySharp.ErrorHandling;
 using CommandLine.Core;
-using CommandLine.Infrastructure;
 
 namespace CommandLine.Tests.Unit.Core
 {
-    public class TokenizerTests
+    public class GetoptTokenizerTests
     {
         [Fact]
         public void Explode_scalar_with_separator_in_odd_args_input_returns_sequence()
@@ -21,11 +20,11 @@ namespace CommandLine.Tests.Unit.Core
             var expectedTokens = new[] { Token.Name("i"), Token.Value("10"), Token.Name("string-seq"),
                 Token.Value("aaa"), Token.Value("bb"),  Token.Value("cccc"), Token.Name("switch") };
             var specs = new[] { new OptionSpecification(string.Empty, "string-seq",
-                false, string.Empty, Maybe.Nothing<int>(), Maybe.Nothing<int>(), ',', null, string.Empty, string.Empty, new List<string>(), typeof(IEnumerable<string>), TargetType.Sequence, string.Empty, flagCounter: false, hidden:false)};
+                false, string.Empty, Maybe.Nothing<int>(), Maybe.Nothing<int>(), ',', null, string.Empty, string.Empty, new List<string>(), typeof(IEnumerable<string>), TargetType.Sequence, string.Empty)};
 
             // Exercize system
             var result =
-                Tokenizer.ExplodeOptionList(
+                GetoptTokenizer.ExplodeOptionList(
                     Result.Succeed(
                         Enumerable.Empty<Token>().Concat(new[] { Token.Name("i"), Token.Value("10"),
                             Token.Name("string-seq"), Token.Value("aaa,bb,cccc"), Token.Name("switch") }),
@@ -44,11 +43,11 @@ namespace CommandLine.Tests.Unit.Core
             var expectedTokens = new[] { Token.Name("x"), Token.Name("string-seq"),
                 Token.Value("aaa"), Token.Value("bb"),  Token.Value("cccc"), Token.Name("switch") };
             var specs = new[] { new OptionSpecification(string.Empty, "string-seq",
-                false, string.Empty, Maybe.Nothing<int>(), Maybe.Nothing<int>(), ',', null, string.Empty, string.Empty, new List<string>(), typeof(IEnumerable<string>), TargetType.Sequence, string.Empty, flagCounter: false, hidden:false)};
+                false, string.Empty, Maybe.Nothing<int>(), Maybe.Nothing<int>(), ',', null, string.Empty, string.Empty, new List<string>(), typeof(IEnumerable<string>), TargetType.Sequence, string.Empty)};
 
             // Exercize system
             var result =
-                Tokenizer.ExplodeOptionList(
+                GetoptTokenizer.ExplodeOptionList(
                     Result.Succeed(
                         Enumerable.Empty<Token>().Concat(new[] { Token.Name("x"),
                             Token.Name("string-seq"), Token.Value("aaa,bb,cccc"), Token.Name("switch") }),
@@ -71,7 +70,7 @@ namespace CommandLine.Tests.Unit.Core
              */
             var args = new[] { "--connectionString=Server=localhost;Data Source=(LocalDB)\v12.0;Initial Catalog=temp;" };
 
-            var result = Tokenizer.Tokenize(args, name => NameLookupResult.OtherOptionFound);
+            var result = GetoptTokenizer.Tokenize(args, name => NameLookupResult.OtherOptionFound);
 
             var tokens = result.SucceededWith();
 
@@ -86,7 +85,7 @@ namespace CommandLine.Tests.Unit.Core
         {
             var args = new[] { "--option1 = fail", "--option2= succeed" };
 
-            var result = Tokenizer.Tokenize(args, name => NameLookupResult.OtherOptionFound);
+            var result = GetoptTokenizer.Tokenize(args, name => NameLookupResult.OtherOptionFound);
 
             var errors = result.SuccessMessages();
 
@@ -103,17 +102,18 @@ namespace CommandLine.Tests.Unit.Core
             Assert.Equal(" succeed", tokens.Last().Text);
         }
 
+
         [Theory]
         [InlineData(new[] { "-a", "-" }, 2,"a","-")]
         [InlineData(new[] { "--file", "-" }, 2,"file","-")]
         [InlineData(new[] { "-f-" }, 2,"f", "-")]
         [InlineData(new[] { "--file=-" }, 2, "file", "-")]
-        [InlineData(new[] { "-a", "--" }, 1, "a", "a")]
+        [InlineData(new[] { "-a", "--" }, 2, "a", "--")]
         public void Single_dash_as_a_value(string[] args, int countExcepted,string first,string last)
         {
             //Arrange
             //Act
-            var result = Tokenizer.Tokenize(args, name => NameLookupResult.OtherOptionFound);
+            var result = GetoptTokenizer.Tokenize(args, name => NameLookupResult.OtherOptionFound);
             var tokens = result.SucceededWith().ToList();
             //Assert
             tokens.Should().NotBeNull();

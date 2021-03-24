@@ -47,8 +47,7 @@ namespace CommandLine.Core
             bool autoHelp,
             bool autoVersion,
             bool allowMultiInstance,
-            IEnumerable<ErrorType> nonFatalErrors)
-        {
+            IEnumerable<ErrorType> nonFatalErrors)        {
             var typeInfo = factory.MapValueOrDefault(f => f().GetType(), typeof(T));
 
             var specProps = typeInfo.GetSpecifications(pi => SpecificationProperty.Create(
@@ -89,14 +88,14 @@ namespace CommandLine.Core
                     OptionMapper.MapValues(
                         (from pt in specProps where pt.Specification.IsOption() select pt),
                         optionsPartition,
-                        (vals, type, isScalar) => TypeConverter.ChangeType(vals, type, isScalar, parsingCulture, ignoreValueCase),
+                        (vals, type, isScalar, isFlag) => TypeConverter.ChangeType(vals, type, isScalar, isFlag, parsingCulture, ignoreValueCase),
                         nameComparer);
 
                 var valueSpecPropsResult =
                     ValueMapper.MapValues(
                         (from pt in specProps where pt.Specification.IsValue() orderby ((ValueSpecification)pt.Specification).Index select pt),
-                        valuesPartition,
-                        (vals, type, isScalar) => TypeConverter.ChangeType(vals, type, isScalar, parsingCulture, ignoreValueCase));
+                        valuesPartition,    
+                        (vals, type, isScalar) => TypeConverter.ChangeType(vals, type, isScalar, false, parsingCulture, ignoreValueCase));
 
                 var missingValueErrors = from token in errorsPartition
                                          select
@@ -111,7 +110,7 @@ namespace CommandLine.Core
 
                 //build the instance, determining if the type is mutable or not.
                 T instance;
-                if (typeInfo.IsMutable() == true)
+                if(typeInfo.IsMutable() == true)
                 {
                     instance = BuildMutable(factory, specPropsWithValue, setPropertyErrors);
                 }

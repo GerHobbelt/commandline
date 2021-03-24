@@ -18,9 +18,9 @@ namespace CommandLine.Core
 
         public OptionSpecification(string shortName, string longName, bool required, string setName, Maybe<int> min, Maybe<int> max,
             char separator, Maybe<object> defaultValue, string helpText, string metaValue, IEnumerable<string> enumValues,
-            Type conversionType, TargetType targetType, string group, bool flagCounter, bool hidden)
+            Type conversionType, TargetType targetType, string group, bool flagCounter = false, bool hidden = false)
             : base(SpecificationType.Option,
-                 required, min, max, defaultValue, helpText, metaValue, enumValues, conversionType, targetType, hidden)
+                 required, min, max, defaultValue, helpText, metaValue, enumValues, conversionType, conversionType == typeof(int) && flagCounter ? TargetType.Switch : targetType, hidden)
         {
             this.shortName = shortName;
             this.longName = longName;
@@ -82,6 +82,9 @@ namespace CommandLine.Core
             get { return group; }
         }
 
+        /// <summary>
+        /// Whether this is an int option that counts how many times a flag was set rather than taking a value on the command line
+        /// </summary>
         public bool FlagCounter
         {
             get { return flagCounter; }

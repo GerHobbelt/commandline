@@ -15,12 +15,13 @@ namespace CommandLine.Tests.Unit.Core
         {
             var expected = new Token[] { };
 
-            var result = Sequence.Partition(
+            var tokens = TokenPartitioner.PartitionTokensByType(
                 new Token[] { },
                 name =>
                     new[] { "seq" }.Contains(name)
                         ? Maybe.Just(TypeDescriptor.Create(TargetType.Sequence, Maybe.Nothing<int>()))
                         : Maybe.Nothing<TypeDescriptor>());
+            var result = tokens.Item3;  // Switch, Scalar, *Sequence*, NonOption
 
             expected.Should().AllBeEquivalentTo(result);
         }
@@ -33,7 +34,7 @@ namespace CommandLine.Tests.Unit.Core
                     Token.Name("seq"), Token.Value("seqval0"), Token.Value("seqval1")
                 };
 
-            var result = Sequence.Partition(
+            var tokens = TokenPartitioner.PartitionTokensByType(
                 new[]
                     {
                         Token.Name("str"), Token.Value("strvalue"), Token.Value("freevalue"),
@@ -44,12 +45,13 @@ namespace CommandLine.Tests.Unit.Core
                     new[] { "seq" }.Contains(name)
                         ? Maybe.Just(TypeDescriptor.Create(TargetType.Sequence, Maybe.Nothing<int>()))
                         : Maybe.Nothing<TypeDescriptor>());
+            var result = tokens.Item3;  // Switch, Scalar, *Sequence*, NonOption
 
             expected.Should().BeEquivalentTo(result);
         }
 
         [Fact]
-        public void Partition_sequence_values_from_two_sequences()
+        public void Partition_sequence_values_from_two_sequneces()
         {
             var expected = new[]
                 {
@@ -57,7 +59,7 @@ namespace CommandLine.Tests.Unit.Core
                     Token.Name("seqb"), Token.Value("seqbval0")
                 };
 
-            var result = Sequence.Partition(
+            var tokens = TokenPartitioner.PartitionTokensByType(
                 new[]
                     {
                         Token.Name("str"), Token.Value("strvalue"), Token.Value("freevalue"),
@@ -69,6 +71,7 @@ namespace CommandLine.Tests.Unit.Core
                     new[] { "seq", "seqb" }.Contains(name)
                         ? Maybe.Just(TypeDescriptor.Create(TargetType.Sequence, Maybe.Nothing<int>()))
                         : Maybe.Nothing<TypeDescriptor>());
+            var result = tokens.Item3;  // Switch, Scalar, *Sequence*, NonOption
 
             expected.Should().BeEquivalentTo(result);
         }
@@ -81,7 +84,7 @@ namespace CommandLine.Tests.Unit.Core
                     Token.Name("seq"), Token.Value("seqval0"), Token.Value("seqval1")
                 };
 
-            var result = Sequence.Partition(
+            var tokens = TokenPartitioner.PartitionTokensByType(
                 new[]
                     {
                         Token.Name("seq"), Token.Value("seqval0"), Token.Value("seqval1")
@@ -90,6 +93,7 @@ namespace CommandLine.Tests.Unit.Core
                     new[] { "seq" }.Contains(name)
                         ? Maybe.Just(TypeDescriptor.Create(TargetType.Sequence, Maybe.Nothing<int>()))
                         : Maybe.Nothing<TypeDescriptor>());
+            var result = tokens.Item3;  // Switch, Scalar, *Sequence*, NonOption
 
             expected.Should().BeEquivalentTo(result);
         }
@@ -107,7 +111,7 @@ namespace CommandLine.Tests.Unit.Core
                 Token.Value("seqval4"),
             };
 
-            var result = Sequence.Partition(
+            var tokens = TokenPartitioner.PartitionTokensByType(
                 new[]
                 {
                     Token.Name("str"), Token.Value("strvalue"), Token.Value("freevalue"),
@@ -120,6 +124,7 @@ namespace CommandLine.Tests.Unit.Core
                     new[] { "seq" }.Contains(name)
                         ? Maybe.Just(TypeDescriptor.Create(TargetType.Sequence, Maybe.Nothing<int>()))
                         : Maybe.Nothing<TypeDescriptor>());
+            var result = tokens.Item3;  // Switch, Scalar, *Sequence*, NonOption
 
             var actual = result.ToArray();
             Assert.Equal(expected, actual);
@@ -128,7 +133,7 @@ namespace CommandLine.Tests.Unit.Core
         [Fact]
         public void Partition_sequence_multi_instance_with_max()
         {
-            var expected = new[]
+            var incorrect = new[]
             {
                 Token.Name("seq"),
                 Token.Value("seqval0"),
@@ -139,7 +144,15 @@ namespace CommandLine.Tests.Unit.Core
                 Token.Value("seqval5"),
             };
 
-            var result = Sequence.Partition(
+            var expected = new[]
+            {
+                Token.Name("seq"),
+                Token.Value("seqval0"),
+                Token.Value("seqval1"),
+                Token.Value("seqval2"),
+            };
+
+            var tokens = TokenPartitioner.PartitionTokensByType(
                 new[]
                 {
                     Token.Name("str"), Token.Value("strvalue"), Token.Value("freevalue"),
@@ -152,7 +165,10 @@ namespace CommandLine.Tests.Unit.Core
                     new[] { "seq" }.Contains(name)
                         ? Maybe.Just(TypeDescriptor.Create(TargetType.Sequence, Maybe.Just<int>(3)))
                         : Maybe.Nothing<TypeDescriptor>());
+            var result = tokens.Item3;  // Switch, Scalar, *Sequence*, NonOption
 
+            // Max of 3 will apply to the total values, so there should only be 3 values, not 6
+            Assert.NotEqual(incorrect, result);
             Assert.Equal(expected, result);
         }
     }

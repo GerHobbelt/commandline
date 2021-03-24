@@ -95,6 +95,36 @@ namespace CommandLine.Tests.Unit
             // Teardown
         }
 
+        [Theory]
+        [InlineData(new string[0], 0, 0)]
+        [InlineData(new[] { "-v" }, 1, 0)]
+        [InlineData(new[] { "-vv" }, 2, 0)]
+        [InlineData(new[] { "-v", "-v" }, 2, 0)]
+        [InlineData(new[] { "-v", "-v", "-v" }, 3, 0)]
+        [InlineData(new[] { "-v", "-vv" }, 3, 0)]
+        [InlineData(new[] { "-vv", "-v" }, 3, 0)]
+        [InlineData(new[] { "-vvv" }, 3, 0)]
+        [InlineData(new[] { "-v", "-s", "-v", "-v" }, 3, 1)]
+        [InlineData(new[] { "-v", "-ss", "-v", "-v" }, 3, 2)]
+        [InlineData(new[] { "-v", "-s", "-sv", "-v" }, 3, 2)]
+        [InlineData(new[] { "-vsvv" }, 3, 1)]
+        [InlineData(new[] { "-vssvv" }, 3, 2)]
+        [InlineData(new[] { "-vsvsv" }, 3, 2)]
+        public void Parse_FlagCounter_options_with_short_name(string[] args, int verboseCount, int silentCount)
+        {
+            // Fixture setup
+            var expectedOptions = new Options_With_FlagCounter_Switches { Verbose = verboseCount, Silent = silentCount };
+            var sut = new Parser(with => with.AllowMultiInstance = true);
+
+            // Exercize system
+            var result = sut.ParseArguments<Options_With_FlagCounter_Switches>(args);
+
+            // Verify outcome
+            // ((NotParsed<Options_With_FlagCounter_Switches>)result).Errors.Should().BeEmpty();
+            ((Parsed<Options_With_FlagCounter_Switches>)result).Value.Should().BeEquivalentTo(expectedOptions);
+            // Teardown
+        }
+
         [Fact]
         public void Parse_repeated_options_with_default_parser()
         {
@@ -106,6 +136,7 @@ namespace CommandLine.Tests.Unit
 
             // Verify outcome
             Assert.IsType<NotParsed<Options_With_Switches>>(result);
+            // NOTE: Once GetoptMode becomes the default, it will imply MultiInstance and the above check will fail because it will be Parsed.
             // Teardown
         }
 
@@ -130,6 +161,41 @@ namespace CommandLine.Tests.Unit
             // Verify outcome
             ((Parsed<Simple_Options_With_Values>)result).Value.Should().BeEquivalentTo(expectedOptions);
             // Teardown
+        }
+
+        [Fact]
+        public void Parse_options_with_repeated_value_in_values_sequence_and_option()
+        {
+            var text = "x1 x2 x3 -c x1"; // x1 is the same in -c option and first value
+            var args = text.Split();
+            var parser = new Parser(with =>
+            {
+                with.HelpWriter = Console.Out;
+            });
+            var result = parser.ParseArguments<Options_With_Value_Sequence_And_Normal_Option>(args);
+			var options= (result as Parsed<Options_With_Value_Sequence_And_Normal_Option>).Value;
+            options.Compress.Should().BeEquivalentTo(new[] { "x1" });
+            options.InputDirs.Should().BeEquivalentTo(new[] { "x1","x2","x3" });
+        }
+
+        [Fact]
+        public void Parse_options_with_double_dash_and_option_sequence()
+        {
+            var expectedOptions = new Options_With_Option_Sequence_And_Value_Sequence
+            {
+                OptionSequence = new[] { "option1", "option2", "option3" },
+                ValueSequence = new[] { "value1", "value2", "value3" }
+            };
+
+            var sut = new Parser(with => with.EnableDashDash = true);
+
+            // Exercize system
+            var result =
+                sut.ParseArguments<Options_With_Option_Sequence_And_Value_Sequence>(
+                    new[] { "--option-seq", "option1", "option2", "option3", "--", "value1", "value2", "value3" });
+
+            // Verify outcome
+            ((Parsed<Options_With_Option_Sequence_And_Value_Sequence>)result).Value.Should().BeEquivalentTo(expectedOptions);
         }
 
         [Fact]
@@ -233,6 +299,7 @@ namespace CommandLine.Tests.Unit
 
             // Verify outcome
             Assert.IsType<NotParsed<object>>(result);
+            // NOTE: Once GetoptMode becomes the default, it will imply MultiInstance and the above check will fail because it will be Parsed.
             // Teardown
         }
 
@@ -847,6 +914,40 @@ namespace CommandLine.Tests.Unit
             // Teardown
         }
 
+
+        [Fact]
+        public void Parse_default_verb_implicit()
+        {
+            var parser = Parser.Default;
+            parser.ParseArguments<Default_Verb_One>(new[] { "-t" })
+                .WithNotParsed(errors => throw new InvalidOperationException("Must be parsed."))
+                .WithParsed(args =>
+                {
+                    Assert.True(args.TestValueOne);
+                });
+        }
+
+        [Fact]
+        public void Parse_default_verb_explicit()
+        {
+            var parser = Parser.Default;
+            parser.ParseArguments<Default_Verb_One>(new[] { "default1", "-t" })
+                .WithNotParsed(errors => throw new InvalidOperationException("Must be parsed."))
+                .WithParsed(args =>
+                {
+                    Assert.True(args.TestValueOne);
+                });
+        }
+
+        [Fact]
+        public void Parse_multiple_default_verbs()
+        {
+            var parser = Parser.Default;
+            parser.ParseArguments<Default_Verb_One, Default_Verb_Two>(new string[] { })
+                .WithNotParsed(errors => Assert.IsType<MultipleDefaultVerbsError>(errors.First()))
+                .WithParsed(args => throw new InvalidOperationException("Should not be parsed."));
+        }
+
         [Fact]
         public void Parse_repeated_options_in_verbs_scenario_with_multi_instance()
         {
@@ -874,6 +975,7 @@ namespace CommandLine.Tests.Unit
         [Fact]
         public void Parse_repeated_options_in_verbs_scenario_without_multi_instance()
         {
+            // NOTE: Once GetoptMode becomes the default, it will imply MultiInstance and this test will fail because the parser result will be Parsed.
             using (var sut = new Parser(settings => settings.AllowMultiInstance = false))
             {
                 var longVal1 = 100;
@@ -899,6 +1001,7 @@ namespace CommandLine.Tests.Unit
                 }));
             }
         }
+
         [Fact]
         public void Parse_default_verb_with_empty_name()
         {
